@@ -1,0 +1,227 @@
+from IPython.display import display
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+
+import os
+os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
+
+import graphviz
+
+###############################################
+
+###1.데이터 수집&확인
+ab=pd.read_csv('C:/abalone.txt',names=['Sex','Length','Diameter','Height',
+                                       'Whole_weight','Shucked_weight','Viscera_weight','Shell_weight','Rings'],header=None)
+ab.describe()   
+
+###############################################
+
+ab.head() 
+
+###############################################
+
+#plotly 이용한 시각화
+
+import plotly.plotly as py
+from plotly.offline import init_notebook_mode, iplot
+init_notebook_mode(connected=True)
+import plotly.graph_objs as go
+
+import matplotlib.pyplot as plt
+
+# Create trace1 #
+
+trace1 = go.Box(
+                y = ab.Length,
+                name = 'Length',
+                marker = dict(color = 'rgba(255,174,255,0.5)',
+                             line = dict(color='rgb(0,0,0)',width= 1.5)),
+                text = ab.Sex)
+
+trace2 = go.Box(
+                y = ab.Diameter,
+                name = 'Diameter',
+                marker = dict(color = 'rgba(12,50,196,0.6)',
+                             line = dict(color='rgb(0,0,0)',width= 1.5)),
+                text = ab.Sex)
+
+trace3 = go.Box(
+                y = ab.Height,
+                name = 'Height',
+                marker = dict(color = 'rgba(255,50,156,0.4)',
+                             line = dict(color='rgb(0,0,0)',width= 1.5)),
+                text = ab.Sex)
+
+trace4 = go.Box(
+                y = ab.Whole_weight,
+                name = 'Whole_weight',
+                marker = dict(color = 'rgba(230,80,196,0.6)',
+                             line = dict(color='rgb(0,0,0)',width= 1.5)),
+                text = ab.Sex)
+
+trace5 = go.Box(
+                y = ab.Shucked_weight,
+                name = 'Shucked_weight',
+                marker = dict(color = 'rgba(110,10,196,0.6)',
+                             line = dict(color='rgb(0,0,0)',width= 1.5)),
+                text = ab.Sex)
+
+trace6 = go.Box(
+                y = ab.Viscera_weight,
+                name = 'Viscera_weight',
+                marker = dict(color = 'rgba(110,10,196,0.6)',
+                             line = dict(color='rgb(0,0,0)',width= 1.5)),
+                text = ab.Sex)
+
+trace7 = go.Box(
+                y = ab.Shell_weight,
+                name = 'Shell_weight',
+                marker = dict(color = 'rgba(110,10,196,0.6)',
+                             line = dict(color='rgb(0,0,0)',width= 1.5)),
+                text = ab.Sex)
+
+trace8 = go.Box(
+                y = ab.Rings,
+                name = 'Rings',
+                marker = dict(color = 'rgba(110,10,196,0.6)',
+                             line = dict(color='rgb(0,0,0)',width= 1.5)),
+                text = ab.Sex)
+
+
+data = [trace1,trace2,trace3, trace4,trace5,trace6,trace7,trace8]
+iplot(data)
+
+###############################################
+
+#이상치 제거
+print("old : {}".format(len(ab))) 
+
+ab = ab[(ab['Length']>=0.205)]
+ab = ab[(ab['Diameter']>=0.155)]
+ab = ab[(ab['Height']>=0.04) & (ab['Height']<=0.24)]
+ab = ab[(ab['Whole_weight']<=2.2205)]
+ab = ab[(ab['Shucked_weight']<=0.9655)]
+ab = ab[(ab['Viscera_weight']<=0.492)]
+ab = ab[(ab['Shell_weight']<=0.625)]
+ab = ab[(ab['Rings']>=4) & (ab['Height']<=15)]
+
+print("new : {}".format(len(ab))) 
+
+###############################################
+
+ab.head()
+
+###############################################
+
+x=ab.iloc[:,1:10]
+x.head()
+
+###############################################
+
+y=ab.iloc[:,0]
+y.head()
+
+###############################################
+
+from sklearn.model_selection import train_test_split
+
+X_train,X_test,y_train,y_test=train_test_split(x,y,random_state=42)
+
+print("X_train.shape:{}".format(X_train.shape))
+print("X_test.shape:{}".format(X_test.shape))
+print("y_train.shape:{}".format(y_train.shape))
+print("y_test.shape:{}".format(y_test.shape)) 
+
+###############################################
+
+from sklearn.tree import DecisionTreeClassifier
+
+tree = DecisionTreeClassifier(random_state=42)
+tree.fit(X_train,y_train)
+
+print("train score : {}".format(tree.score(X_train,y_train)))
+print("test score : {}".format(tree.score(X_test,y_test))) 
+
+###############################################
+
+# Scikit-Learn이 과대적합을 방지하기 위해 pre-pruning만을 제공한다는 것을 명심 #
+# 나무의 깊이를 4로 --> 질문을 4개로
+
+tree = DecisionTreeClassifier(max_depth=4, random_state=42)
+tree.fit(X_train,y_train)
+
+print("train score : {}".format(tree.score(X_train,y_train)))
+print("test score : {}".format(tree.score(X_test,y_test))) 
+
+###############################################
+
+# 노드의 최대 개수를 10로 
+tree = DecisionTreeClassifier(max_leaf_nodes=10, random_state=42)
+tree.fit(X_train,y_train)
+
+print("train score : {}".format(tree.score(X_train,y_train)))
+print("test score : {}".format(tree.score(X_test,y_test))) 
+
+###############################################
+
+# 데이터 포인트 최소 개수를 4로 
+tree = DecisionTreeClassifier(min_samples_leaf=5, random_state=42)
+tree.fit(X_train,y_train)
+
+print("train score : {}".format(tree.score(X_train,y_train)))
+print("test score : {}".format(tree.score(X_test,y_test))) 
+
+###############################################
+
+from sklearn.tree import export_graphviz
+export_graphviz(tree,out_file="tree.dot",class_names=['Male','Female','Infant'],
+                impurity = False, filled = True)
+
+#graphviz #
+
+import graphviz
+
+with open("tree.dot") as f:
+    dot_graph = f.read()
+display(graphviz.Source(dot_graph)) 
+
+###############################################
+
+# 트리의 특성 중요도(feature importance) #
+# sum(feature importance) = 1 #
+
+print("feature importance : {}".format(tree.feature_importances_))
+print("feature importance : {}".format(np.sum(tree.feature_importances_ != 0))) 
+
+###############################################
+
+ab.feature_names = np.array(['Sex','Length','Diameter','Height','Whole_weight',
+                             'Shucked_weight','Viscera_weight','Shell_weight','Rings'])
+
+def plot_feature_importances_ab(tree):
+    n_features = 8 
+    plt.barh(np.arange(n_features),tree.feature_importances_, align ='center')
+
+plot_feature_importances_ab(tree) 
+
+###############################################
+
+tree.feature_importances_
+
+###############################################
+
+ab.feature_names = np.array(['Sex','Length','Diameter','Height','Whole_weight',
+                             'Shucked_weight','Viscera_weight','Shell_weight','Rings'])
+ab.feature_names
+
+
+
+
+
+
+
+
+
+
+
